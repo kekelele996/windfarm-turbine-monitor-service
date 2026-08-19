@@ -50,9 +50,22 @@ func PowerCurve(samples []telemetry.Sample, binWidth float64) []PowerCurvePoint 
 	return out
 }
 
-// FilterSamples keeps samples whose power output meets the threshold.
+// SmoothPowerSnapshots records an isolated copy of the sliding window after
+// each sample so historical snapshots stay stable.
+func SmoothPowerSnapshots(samples []telemetry.Sample, windowSize int) [][]float64 {
+	w := NewSlidingWindow(windowSize)
+	snapshots := make([][]float64, 0, len(samples))
+	for _, s := range samples {
+		w.Add(s.PowerOutput)
+		snapshots = append(snapshots, w.Values())
+	}
+	return snapshots
+}
+
+// FilterSamples keeps samples whose power output meets the threshold without
+// mutating the input slice.
 func FilterSamples(samples []telemetry.Sample, minPower float64) []telemetry.Sample {
-	out := samples[:0]
+	out := make([]telemetry.Sample, 0, len(samples))
 	for _, s := range samples {
 		if s.PowerOutput >= minPower {
 			out = append(out, s)

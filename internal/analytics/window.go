@@ -15,16 +15,19 @@ func NewSlidingWindow(capacity int) *SlidingWindow {
 
 // Add pushes a value and returns the window mean.
 func (w *SlidingWindow) Add(v float64) float64 {
-	if len(w.values) == w.capacity {
-		copy(w.values, w.values[1:])
-		w.values = w.values[:len(w.values)-1]
-	}
 	w.values = append(w.values, v)
+	if len(w.values) > w.capacity {
+		w.values = w.values[len(w.values)-w.capacity:]
+	}
 	return w.Mean()
 }
 
-// Values returns the current window contents.
-func (w *SlidingWindow) Values() []float64 { return w.values }
+// Values returns a copy of the current window contents.
+func (w *SlidingWindow) Values() []float64 {
+	out := make([]float64, len(w.values))
+	copy(out, w.values)
+	return out
+}
 
 func (w *SlidingWindow) Mean() float64 {
 	if len(w.values) == 0 {
@@ -34,7 +37,7 @@ func (w *SlidingWindow) Mean() float64 {
 	for _, v := range w.values {
 		sum += v
 	}
-	return sum / float64(w.capacity)
+	return sum / float64(len(w.values))
 }
 
-func (w *SlidingWindow) Count() int { return w.capacity }
+func (w *SlidingWindow) Count() int { return len(w.values) }
