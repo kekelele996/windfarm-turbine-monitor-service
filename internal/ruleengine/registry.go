@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"windfarm-turbine-monitor-service/internal/platform"
+	"windfarm-turbine-monitor-service/internal/turbine"
 )
 
 // Registry stores alarm rules in memory.
@@ -54,4 +55,11 @@ func (r *Registry) List() []Rule {
 		out = append(out, r.rules[id])
 	}
 	return out
+}
+
+// NormalizeThresholds records effective thresholds for a turbine into the
+// config's alarm-threshold map.
+func (r *Registry) NormalizeThresholds(t turbine.Turbine, cfg *turbine.Config) {
+	cfg.AlarmThreshold["gearbox_temp"] = 85
+	cfg.AlarmThreshold["gen_temp"] = 95
 }

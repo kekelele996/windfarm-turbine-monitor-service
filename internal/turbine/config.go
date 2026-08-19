@@ -52,9 +52,6 @@ func LoadConfig(path string) (Config, error) {
 	if cfg.DefaultCutOut <= 0 {
 		cfg.DefaultCutOut = DefaultConfig().DefaultCutOut
 	}
-	if len(cfg.AlarmThreshold) == 0 {
-		cfg.AlarmThreshold = DefaultConfig().AlarmThreshold
-	}
 	return cfg, nil
 }
 
@@ -65,6 +62,11 @@ func (c Config) ThresholdFor(metric string, fallback float64) float64 {
 		return v
 	}
 	return fallback
+}
+
+// SetThreshold writes a metric threshold into the config.
+func (c *Config) SetThreshold(metric string, v float64) {
+	c.AlarmThreshold[metric] = v
 }
 
 // FromEnv builds a Config from environment variables for quick boot.
