@@ -49,3 +49,14 @@ func PowerCurve(samples []telemetry.Sample, binWidth float64) []PowerCurvePoint 
 	}
 	return out
 }
+
+// FilterSamples keeps samples whose power output meets the threshold.
+func FilterSamples(samples []telemetry.Sample, minPower float64) []telemetry.Sample {
+	out := samples[:0]
+	for _, s := range samples {
+		if s.PowerOutput >= minPower {
+			out = append(out, s)
+		}
+	}
+	return out
+}
