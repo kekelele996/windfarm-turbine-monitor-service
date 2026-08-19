@@ -2,8 +2,9 @@ package telemetry
 
 import "context"
 
-// runWorker drains jobs until the channel is closed or the context is done.
-func (in *Ingestor) runWorker(ctx context.Context, jobs <-chan Sample) {
+// runWorker drains jobs until the channel is closed or the context is done,
+// reporting sink failures through errCh.
+func (in *Ingestor) runWorker(ctx context.Context, jobs <-chan Sample, errCh chan<- error) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -12,7 +13,11 @@ func (in *Ingestor) runWorker(ctx context.Context, jobs <-chan Sample) {
 			if !ok {
 				return
 			}
-			if in.sink.Append(s) != nil {
+			if err := in.sink.Append(s); err != nil {
+				select {
+				case errCh <- err:
+				default:
+				}
 				return
 			}
 		}

@@ -30,11 +30,13 @@ func (in *Ingestor) Ingest(ctx context.Context, samples []Sample) (int, error) {
 		return 0, nil
 	}
 	jobs := make(chan Sample, len(samples))
+	errCh := make(chan error, in.workers)
 	var wg sync.WaitGroup
+	wg.Add(in.workers)
 	for w := 0; w < in.workers; w++ {
 		go func() {
 			defer wg.Done()
-			in.runWorker(ctx, jobs)
+			in.runWorker(ctx, jobs, errCh)
 		}()
 	}
 	for _, s := range samples {
@@ -43,10 +45,19 @@ func (in *Ingestor) Ingest(ctx context.Context, samples []Sample) (int, error) {
 			close(jobs)
 			wg.Wait()
 			return 0, fmt.Errorf("ingest cancelled: %w", ctx.Err())
+		case err := <-errCh:
+			close(jobs)
+			wg.Wait()
+			return 0, fmt.Errorf("sink append: %w", err)
 		case jobs <- s:
 		}
 	}
 	close(jobs)
 	wg.Wait()
+	select {
+	case err := <-errCh:
+		return 0, fmt.Errorf("sink append: %w", err)
+	default:
+	}
 	return len(samples), nil
 }
