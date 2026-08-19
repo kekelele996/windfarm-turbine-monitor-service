@@ -2,15 +2,18 @@ package fault
 
 // allowed maps each state to the states reachable from it.
 var allowed = map[State][]State{
-	StateNormal:      {StateWarning},
-	StateWarning:     {StateNormal},
-	StateFault:       {StateRetrying},
+	StateNormal:      {StateWarning, StateFault, StateMaintenance},
+	StateWarning:     {StateNormal, StateFault, StateMaintenance},
+	StateFault:       {StateMaintenance, StateRetrying},
 	StateMaintenance: {StateNormal},
-	StateRetrying:    {StateMaintenance},
+	StateRetrying:    {StateNormal, StateMaintenance},
 }
 
 // CanTransition reports whether a move from -> to is legal.
 func CanTransition(from, to State) bool {
+	if from == to {
+		return true
+	}
 	for _, s := range allowed[from] {
 		if s == to {
 			return true
