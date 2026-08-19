@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wind Farm Turbine Monitor</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem; color: #1f2937; }
+    h1 { font-size: 1.4rem; }
+    table { border-collapse: collapse; margin-top: 1rem; width: 100%; max-width: 720px; }
+    th, td { border: 1px solid #e5e7eb; padding: 0.4rem 0.6rem; text-align: left; font-size: 0.9rem; }
+    th { background: #f3f4f6; }
+    .muted { color: #6b7280; }
+  </style>
+</head>
+<body>
+  <h1>Wind Farm Turbine Monitor</h1>
+  <p class="muted">Fleet status, telemetry and alarm summary for on-site operators.</p>
+  <table id="summary"></table>
+  <script>
+    fetch('/api/summary').then(r => r.json()).then(d => {
+      const rows = Object.entries(d).map(([k, v]) => `<tr><th>${k}</th><td>${v}</td></tr>`).join('');
+      document.getElementById('summary').innerHTML = `<tr><th>Field</th><th>Value</th></tr>` + rows;
+    });
+  </script>
+</body>
+</html>
