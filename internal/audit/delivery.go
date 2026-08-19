@@ -19,21 +19,25 @@ func NewDelivery(stream *Stream, checkpoint *Checkpoint) *Delivery {
 }
 
 // Deliver sends every event after the subscriber's checkpoint and returns an
-// error when the subscriber is blocked.
-func (d *Delivery) Deliver(subID string, ch chan Event) (err error) {
+// error when the subscriber is blocked or a checkpoint cannot be advanced.
+func (d *Delivery) Deliver(subID string, ch chan Event) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	defer func() { err = nil }()
 	offset := d.checkpoint.Get(subID)
 	history := d.stream.History()
+	delivered := 0
 	for i := offset; i < len(history); i++ {
 		select {
 		case ch <- history[i]:
-			if aErr := d.checkpoint.Advance(subID, i+1); aErr != nil {
-				return aErr
+			if err := d.checkpoint.Advance(subID, i+1); err != nil {
+				return fmt.Errorf("advance checkpoint: %w", err)
 			}
+			delivered++
 		default:
-			return fmt.Errorf("subscriber blocked: %w", platform.ErrUnavailable)
+			if delivered == 0 {
+				return fmt.Errorf("subscriber blocked: %w", platform.ErrUnavailable)
+			}
+			return fmt.Errorf("subscriber blocked after %d events: %w", delivered, platform.ErrUnavailable)
 		}
 	}
 	return nil
