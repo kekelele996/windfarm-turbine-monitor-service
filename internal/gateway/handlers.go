@@ -137,7 +137,7 @@ func (a *App) handleResolveFault(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	f, err := a.Faults.Resolve(id)
 	if err != nil {
-		writeError(w, http.StatusNotFound, err.Error())
+		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	writeJSON(w, http.StatusOK, f)

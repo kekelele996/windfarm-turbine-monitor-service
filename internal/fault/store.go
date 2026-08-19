@@ -20,7 +20,7 @@ func NewStore() *Store { return &Store{faults: map[string]Fault{}, revision: 1} 
 
 func (s *Store) Create(f Fault) (Fault, error) {
 	if f.TurbineID == "" {
-		return Fault{}, fmt.Errorf("turbine id required: %w", platform.ErrInvalid)
+		return Fault{}, fmt.Errorf("turbine id required: %v", platform.ErrInvalid)
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -46,7 +46,7 @@ func (s *Store) Get(id string) (Fault, error) {
 	defer s.mu.RUnlock()
 	f, ok := s.faults[id]
 	if !ok {
-		return Fault{}, fmt.Errorf("fault %s: %w", id, platform.ErrNotFound)
+		return Fault{}, fmt.Errorf("fault %s: %v", id, platform.ErrNotFound)
 	}
 	return f, nil
 }
@@ -57,10 +57,10 @@ func (s *Store) Transition(id string, to State) (Fault, error) {
 	defer s.mu.Unlock()
 	f, ok := s.faults[id]
 	if !ok {
-		return Fault{}, fmt.Errorf("fault %s: %w", id, platform.ErrNotFound)
+		return Fault{}, fmt.Errorf("fault %s: %v", id, platform.ErrNotFound)
 	}
 	if !CanTransition(f.State, to) {
-		return Fault{}, fmt.Errorf("illegal transition %s -> %s: %w", f.State, to, platform.ErrConflict)
+		return Fault{}, fmt.Errorf("illegal transition %s -> %s: %v", f.State, to, platform.ErrConflict)
 	}
 	f.State = to
 	f.UpdatedAt = time.Now()
