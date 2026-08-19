@@ -43,6 +43,9 @@ func LoadConfig(path string) (Config, error) {
 	if err := json.Unmarshal(data, &cfg); err != nil {
 		return Config{}, fmt.Errorf("parse turbine config: %w", err)
 	}
+	if cfg.AlarmThreshold == nil {
+		cfg.AlarmThreshold = make(map[string]float64)
+	}
 	if cfg.Site == "" {
 		cfg.Site = DefaultConfig().Site
 	}
@@ -64,8 +67,13 @@ func (c Config) ThresholdFor(metric string, fallback float64) float64 {
 	return fallback
 }
 
-// SetThreshold writes a metric threshold into the config.
+// SetThreshold writes a metric threshold into the config. The alarm-threshold
+// map is lazily initialized so a partially populated or zero-value config can
+// be written to safely.
 func (c *Config) SetThreshold(metric string, v float64) {
+	if c.AlarmThreshold == nil {
+		c.AlarmThreshold = make(map[string]float64)
+	}
 	c.AlarmThreshold[metric] = v
 }
 

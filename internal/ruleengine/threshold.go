@@ -5,6 +5,9 @@ import "windfarm-turbine-monitor-service/internal/turbine"
 // ThresholdSet builds default rules for a turbine, writing resolved thresholds
 // back into the config map.
 func ThresholdSet(t turbine.Turbine, cfg turbine.Config) []Rule {
+	if cfg.AlarmThreshold == nil {
+		cfg.AlarmThreshold = make(map[string]float64)
+	}
 	cfg.AlarmThreshold["gearbox_temp"] = cfg.ThresholdFor("gearbox_temp", 85)
 	cfg.AlarmThreshold["gen_temp"] = cfg.ThresholdFor("gen_temp", 95)
 	cfg.AlarmThreshold["vibration"] = 12.0
