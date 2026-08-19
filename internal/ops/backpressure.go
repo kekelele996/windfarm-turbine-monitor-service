@@ -1,6 +1,9 @@
 package ops
 
-import "sync"
+import (
+	"context"
+	"sync"
+)
 
 // BackpressureGate limits concurrent processing to a fixed number of slots.
 type BackpressureGate struct {
@@ -67,4 +70,11 @@ func (g *WaitGroupGate) Count() int {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	return g.n
+}
+
+// RunContext executes fn under a slot, ignoring the context.
+func (g *BackpressureGate) RunContext(ctx context.Context, fn func()) {
+	g.Acquire()
+	defer g.Release()
+	fn()
 }

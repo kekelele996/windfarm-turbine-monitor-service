@@ -30,7 +30,6 @@ func (s *Scheduler) Add(job PeriodicJob) {
 	s.jobs = append(s.jobs, job)
 }
 
-// Start runs all jobs once per interval until the context is cancelled.
 func (s *Scheduler) Start(ctx context.Context) {
 	s.mu.Lock()
 	if s.active {
@@ -48,27 +47,28 @@ func (s *Scheduler) Start(ctx context.Context) {
 		s.mu.Unlock()
 	}()
 
-	run := func() {
-		var wg sync.WaitGroup
-		for _, job := range s.snapshot() {
-			wg.Add(1)
-			go func(j PeriodicJob) {
-				defer wg.Done()
-				j(ctx)
-			}(job)
-		}
-		wg.Wait()
-	}
-
-	run()
+	s.runOnce(ctx)
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			run()
+			s.runOnce(ctx)
 		}
 	}
+}
+
+func (s *Scheduler) runOnce(ctx context.Context) {
+	jobs := s.snapshot()
+	var wg sync.WaitGroup
+	for _, job := range jobs {
+		wg.Add(1)
+		go func(j PeriodicJob) {
+			defer wg.Done()
+			j(context.Background())
+		}(job)
+	}
+	wg.Wait()
 }
 
 func (s *Scheduler) snapshot() []PeriodicJob {
@@ -79,7 +79,6 @@ func (s *Scheduler) snapshot() []PeriodicJob {
 	return out
 }
 
-// JobCount returns the number of registered jobs.
 func (s *Scheduler) JobCount() int {
 	s.mu.Lock()
 	defer s.mu.Unlock()

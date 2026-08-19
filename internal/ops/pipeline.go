@@ -38,7 +38,7 @@ func (p *Pipeline) ProcessIngest(ctx context.Context, batch telemetry.SampleBatc
 	normalizer := telemetry.Normalizer{}
 	normalizer.NormalizeBatch(valid)
 
-	ingested, err := p.Ingestor.Ingest(ctx, valid)
+	ingested, err := p.Ingestor.Ingest(context.Background(), valid)
 	if err != nil {
 		return stats, fmt.Errorf("ingest: %w", err)
 	}
