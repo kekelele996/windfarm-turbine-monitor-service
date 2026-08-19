@@ -31,6 +31,9 @@ type ProcessStats struct {
 
 func (p *Pipeline) ProcessIngest(ctx context.Context, batch telemetry.SampleBatch) (ProcessStats, error) {
 	var stats ProcessStats
+	if err := ctx.Err(); err != nil {
+		return stats, fmt.Errorf("ingest cancelled: %w", err)
+	}
 	validator := telemetry.DefaultValidator()
 	valid, errs := validator.ValidateBatch(batch)
 	stats.Rejected = len(errs)
@@ -38,37 +41,50 @@ func (p *Pipeline) ProcessIngest(ctx context.Context, batch telemetry.SampleBatc
 	normalizer := telemetry.Normalizer{}
 	normalizer.NormalizeBatch(valid)
 
-	ingested, err := p.Ingestor.Ingest(context.Background(), valid)
+	ingested, err := p.Ingestor.Ingest(ctx, valid)
 	if err != nil {
 		return stats, fmt.Errorf("ingest: %w", err)
 	}
 	stats.Ingested = ingested
 
 	for _, s := range valid {
-		for _, ev := range p.Evaluator.Evaluate(s) {
-			candidate := alarm.Alarm{
-				TurbineID: s.TurbineID,
-				RuleID:    ev.Rule.ID,
-				Metric:    string(ev.Rule.Metric),
-				Severity:  string(ev.Rule.Severity),
-				Value:     ev.Value,
-				Threshold: ev.Rule.Threshold,
-			}
-			created, ok, _ := p.Alarms.Dispatch(candidate)
-			if !ok {
-				continue
-			}
-			stats.AlarmsRaised++
-			p.Notifier.Notify(created)
-			p.Audit.Publish(audit.EventAlarm, s.TurbineID, created.RuleID)
+		if err := ctx.Err(); err != nil {
+			return stats, fmt.Errorf("ingest cancelled: %w", err)
+		}
+		stats = p.evaluateSample(ctx, s, stats)
+	}
+	return stats, nil
+}
 
-			if ev.Rule.Severity == ruleengine.SeverityCritical {
-				if _, err := p.Faults.Raise(s.TurbineID, "F1-"+string(ev.Rule.Metric), "critical"); err == nil {
-					stats.FaultsRaised++
-					p.Audit.Publish(audit.EventFault, s.TurbineID, "F1-"+string(ev.Rule.Metric))
-				}
+// evaluateSample runs the rule engine for one sample and raises alarms and
+// critical faults, bailing out as soon as the context is cancelled.
+func (p *Pipeline) evaluateSample(ctx context.Context, s telemetry.Sample, stats ProcessStats) ProcessStats {
+	for _, ev := range p.Evaluator.Evaluate(s) {
+		if ctx.Err() != nil {
+			return stats
+		}
+		candidate := alarm.Alarm{
+			TurbineID: s.TurbineID,
+			RuleID:    ev.Rule.ID,
+			Metric:    string(ev.Rule.Metric),
+			Severity:  string(ev.Rule.Severity),
+			Value:     ev.Value,
+			Threshold: ev.Rule.Threshold,
+		}
+		created, ok, _ := p.Alarms.Dispatch(candidate)
+		if !ok {
+			continue
+		}
+		stats.AlarmsRaised++
+		p.Notifier.Notify(created)
+		p.Audit.Publish(audit.EventAlarm, s.TurbineID, created.RuleID)
+
+		if ev.Rule.Severity == ruleengine.SeverityCritical {
+			if _, err := p.Faults.Raise(s.TurbineID, "F1-"+string(ev.Rule.Metric), "critical"); err == nil {
+				stats.FaultsRaised++
+				p.Audit.Publish(audit.EventFault, s.TurbineID, "F1-"+string(ev.Rule.Metric))
 			}
 		}
 	}
-	return stats, nil
+	return stats
 }

@@ -72,8 +72,11 @@ func (g *WaitGroupGate) Count() int {
 	return g.n
 }
 
-// RunContext executes fn under a slot, ignoring the context.
+// RunContext executes fn under a slot unless the context is already cancelled.
 func (g *BackpressureGate) RunContext(ctx context.Context, fn func()) {
+	if ctx.Err() != nil {
+		return
+	}
 	g.Acquire()
 	defer g.Release()
 	fn()

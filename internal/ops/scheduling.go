@@ -31,6 +31,9 @@ func (s *Scheduler) Add(job PeriodicJob) {
 }
 
 func (s *Scheduler) Start(ctx context.Context) {
+	if ctx.Err() != nil {
+		return
+	}
 	s.mu.Lock()
 	if s.active {
 		s.mu.Unlock()
@@ -65,7 +68,7 @@ func (s *Scheduler) runOnce(ctx context.Context) {
 		wg.Add(1)
 		go func(j PeriodicJob) {
 			defer wg.Done()
-			j(context.Background())
+			j(ctx)
 		}(job)
 	}
 	wg.Wait()
