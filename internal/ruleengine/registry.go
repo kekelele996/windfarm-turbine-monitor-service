@@ -58,8 +58,11 @@ func (r *Registry) List() []Rule {
 }
 
 // NormalizeThresholds records effective thresholds for a turbine into the
-// config's alarm-threshold map.
+// config's alarm-threshold map, initializing it when missing.
 func (r *Registry) NormalizeThresholds(t turbine.Turbine, cfg *turbine.Config) {
+	if cfg.AlarmThreshold == nil {
+		cfg.AlarmThreshold = make(map[string]float64)
+	}
 	cfg.AlarmThreshold["gearbox_temp"] = 85
 	cfg.AlarmThreshold["gen_temp"] = 95
 }

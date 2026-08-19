@@ -52,6 +52,7 @@ func LoadConfig(path string) (Config, error) {
 	if cfg.DefaultCutOut <= 0 {
 		cfg.DefaultCutOut = DefaultConfig().DefaultCutOut
 	}
+	cfg.ensureThresholds()
 	return cfg, nil
 }
 
@@ -64,10 +65,29 @@ func (c Config) ThresholdFor(metric string, fallback float64) float64 {
 	return fallback
 }
 
-// SetThreshold writes a metric threshold into the config.
+// ensureThresholds lazily initializes the threshold map and seeds it with
+// default values when it has not been populated.
+func (c *Config) ensureThresholds() {
+	if c.AlarmThreshold == nil {
+		c.AlarmThreshold = make(map[string]float64)
+	}
+	if len(c.AlarmThreshold) == 0 {
+		def := DefaultConfig().AlarmThreshold
+		for k, v := range def {
+			c.AlarmThreshold[k] = v
+		}
+	}
+}
+
+// SetThreshold writes a metric threshold into the config, initializing the
+// threshold map when it is nil.
 func (c *Config) SetThreshold(metric string, v float64) {
+	c.ensureThresholds()
 	c.AlarmThreshold[metric] = v
 }
+
+// ThresholdCount returns how many metric thresholds are configured.
+func (c *Config) ThresholdCount() int { return len(c.AlarmThreshold) }
 
 // FromEnv builds a Config from environment variables for quick boot.
 func FromEnv() Config {
