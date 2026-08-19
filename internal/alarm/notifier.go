@@ -37,9 +37,17 @@ func (n *Notifier) SinkCount() int {
 	return len(n.sinks)
 }
 
+// ensureInit lazily initializes the count map.
+func (n *Notifier) ensureInit() {
+	if n.counts == nil {
+		n.counts = make(map[string]int)
+	}
+}
+
 // Track records how many notifications each turbine received.
 func (n *Notifier) Track(a Alarm) {
 	n.mu.Lock()
 	defer n.mu.Unlock()
+	n.ensureInit()
 	n.counts[a.TurbineID]++
 }

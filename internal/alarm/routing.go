@@ -30,7 +30,15 @@ type Router struct {
 
 func NewRouter() *Router { return &Router{} }
 
+// ensureInit lazily initializes the channel map.
+func (r *Router) ensureInit() {
+	if r.channels == nil {
+		r.channels = make(map[Route][]chan Alarm)
+	}
+}
+
 func (r *Router) Register(route Route, ch chan Alarm) {
+	r.ensureInit()
 	r.channels[route] = append(r.channels[route], ch)
 }
 

@@ -19,12 +19,20 @@ func NewDispatcher(dedup *Deduplicator) *Dispatcher {
 	return &Dispatcher{dedup: dedup}
 }
 
+// ensureInit lazily initializes the alarm map.
+func (d *Dispatcher) ensureInit() {
+	if d.alarms == nil {
+		d.alarms = make(map[string]Alarm)
+	}
+}
+
 func (d *Dispatcher) Dispatch(a Alarm) (Alarm, bool, error) {
 	if a.TurbineID == "" || a.RuleID == "" {
 		return Alarm{}, false, platform.ErrInvalid
 	}
 	d.mu.Lock()
 	defer d.mu.Unlock()
+	d.ensureInit()
 	open := d.openLocked()
 	if d.dedup.Suppress(a, open) {
 		return Alarm{}, false, nil

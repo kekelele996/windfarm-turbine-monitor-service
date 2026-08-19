@@ -25,7 +25,15 @@ func (d *Deduplicator) Suppress(candidate Alarm, existing []Alarm) bool {
 	return false
 }
 
+// ensureInit lazily initializes the seen map.
+func (d *Deduplicator) ensureInit() {
+	if d.seen == nil {
+		d.seen = make(map[string]time.Time)
+	}
+}
+
 func (d *Deduplicator) Record(a Alarm) {
+	d.ensureInit()
 	d.seen[a.Key()] = time.Now()
 }
 
