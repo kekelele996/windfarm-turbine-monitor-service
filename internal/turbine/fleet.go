@@ -12,8 +12,9 @@ type FleetStats struct {
 }
 
 func (r *Registry) Stats() FleetStats {
-	s := FleetStats{Total: len(r.list), BySite: map[string]int{}, Models: map[string]int{}}
-	for _, t := range r.list {
+	list := r.List()
+	s := FleetStats{Total: len(list), BySite: map[string]int{}, Models: map[string]int{}}
+	for _, t := range list {
 		s.BySite[t.Site]++
 		s.Models[t.Model]++
 		switch t.State {
@@ -29,7 +30,7 @@ func (r *Registry) Stats() FleetStats {
 // Sites returns the distinct site codes in the fleet, sorted.
 func (r *Registry) Sites() []string {
 	seen := map[string]struct{}{}
-	for _, t := range r.list {
+	for _, t := range r.List() {
 		seen[t.Site] = struct{}{}
 	}
 	out := make([]string, 0, len(seen))
