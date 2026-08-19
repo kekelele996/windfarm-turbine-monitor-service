@@ -12,7 +12,6 @@ type Registry struct {
 	mu       sync.RWMutex
 	turbines map[string]Turbine
 	order    []string
-	list     []Turbine
 }
 
 func NewRegistry(seed []Turbine) *Registry {
@@ -49,17 +48,21 @@ func (r *Registry) Get(id string) (Turbine, error) {
 
 // List returns the fleet in registration order.
 func (r *Registry) List() []Turbine {
-	if r.list == nil {
-		for _, id := range r.order {
-			r.list = append(r.list, r.turbines[id])
-		}
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	out := make([]Turbine, 0, len(r.order))
+	for _, id := range r.order {
+		out = append(out, r.turbines[id])
 	}
-	return r.list
+	return out
 }
 
 func (r *Registry) ListActive() []Turbine {
-	out := make([]Turbine, 0, len(r.list))
-	for _, t := range r.list {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	out := make([]Turbine, 0, len(r.order))
+	for _, id := range r.order {
+		t := r.turbines[id]
 		if t.Active() {
 			out = append(out, t)
 		}
@@ -80,5 +83,7 @@ func (r *Registry) UpdateState(id string, state TurbineState) error {
 }
 
 func (r *Registry) Count() int {
-	return len(r.list)
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return len(r.turbines)
 }
