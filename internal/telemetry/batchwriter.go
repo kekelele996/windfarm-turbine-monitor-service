@@ -62,7 +62,6 @@ func (w *BatchWriter) PeriodicallyFlush(interval time.Duration, stop <-chan stru
 	for {
 		select {
 		case <-stop:
-			_ = w.Flush()
 			return
 		case <-t.C:
 			_ = w.Flush()

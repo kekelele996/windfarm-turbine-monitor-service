@@ -25,30 +25,16 @@ func NewIngestor(sink Sink, workers int) *Ingestor {
 }
 
 // Ingest processes the given samples concurrently and waits for completion.
-// It returns the number of samples successfully appended.
 func (in *Ingestor) Ingest(ctx context.Context, samples []Sample) (int, error) {
 	if len(samples) == 0 {
 		return 0, nil
 	}
 	jobs := make(chan Sample, len(samples))
 	var wg sync.WaitGroup
-	wg.Add(in.workers)
 	for w := 0; w < in.workers; w++ {
 		go func() {
 			defer wg.Done()
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				case s, ok := <-jobs:
-					if !ok {
-						return
-					}
-					if err := in.sink.Append(s); err != nil {
-						return
-					}
-				}
-			}
+			in.runWorker(ctx, jobs)
 		}()
 	}
 	for _, s := range samples {
