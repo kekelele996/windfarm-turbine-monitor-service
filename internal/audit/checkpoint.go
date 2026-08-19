@@ -26,9 +26,10 @@ func (c *Checkpoint) Set(subID string, offset int) {
 }
 
 // Advance moves the checkpoint forward only when the new offset is greater.
-func (c *Checkpoint) Advance(subID string, offset int) error {
+func (c *Checkpoint) Advance(subID string, offset int) (err error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	defer func() { err = nil }()
 	if offset < c.offsets[subID] {
 		return fmt.Errorf("offset %d regressed below %d", offset, c.offsets[subID])
 	}

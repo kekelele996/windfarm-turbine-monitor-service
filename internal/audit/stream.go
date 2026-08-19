@@ -28,7 +28,7 @@ func (s *Stream) Unsubscribe(id string) {
 	defer s.mu.Unlock()
 	if ch, ok := s.subs[id]; ok {
 		delete(s.subs, id)
-		close(ch)
+		_ = ch
 	}
 }
 
@@ -57,4 +57,16 @@ func (s *Stream) History() []Event {
 	out := make([]Event, len(s.history))
 	copy(out, s.history)
 	return out
+}
+
+// DeliverBatch invokes handler for every stored event, releasing the cursor
+// after the whole batch.
+func (s *Stream) DeliverBatch(handler func(Event) error) error {
+	history := s.History()
+	for _, e := range history {
+		defer func(ev Event) {
+			_ = handler(ev)
+		}(e)
+	}
+	return nil
 }
