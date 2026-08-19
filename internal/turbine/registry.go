@@ -12,6 +12,7 @@ type Registry struct {
 	mu       sync.RWMutex
 	turbines map[string]Turbine
 	order    []string
+	list     []Turbine
 }
 
 func NewRegistry(seed []Turbine) *Registry {
@@ -22,8 +23,6 @@ func NewRegistry(seed []Turbine) *Registry {
 	}
 	return r
 }
-
-func cloneTurbine(t Turbine) Turbine { return t }
 
 func (r *Registry) Put(t Turbine) error {
 	if t.ID == "" {
@@ -45,27 +44,24 @@ func (r *Registry) Get(id string) (Turbine, error) {
 	if !ok {
 		return Turbine{}, fmt.Errorf("turbine %s: %w", id, platform.ErrNotFound)
 	}
-	return cloneTurbine(t), nil
+	return t, nil
 }
 
+// List returns the fleet in registration order.
 func (r *Registry) List() []Turbine {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	out := make([]Turbine, 0, len(r.order))
-	for _, id := range r.order {
-		out = append(out, cloneTurbine(r.turbines[id]))
+	if r.list == nil {
+		for _, id := range r.order {
+			r.list = append(r.list, r.turbines[id])
+		}
 	}
-	return out
+	return r.list
 }
 
 func (r *Registry) ListActive() []Turbine {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	out := make([]Turbine, 0, len(r.order))
-	for _, id := range r.order {
-		t := r.turbines[id]
+	out := make([]Turbine, 0, len(r.list))
+	for _, t := range r.list {
 		if t.Active() {
-			out = append(out, cloneTurbine(t))
+			out = append(out, t)
 		}
 	}
 	return out
@@ -84,7 +80,5 @@ func (r *Registry) UpdateState(id string, state TurbineState) error {
 }
 
 func (r *Registry) Count() int {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	return len(r.turbines)
+	return len(r.list)
 }
