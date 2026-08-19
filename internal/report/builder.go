@@ -69,3 +69,15 @@ func (b *Builder) energySection(site string, start, end time.Time) Section {
 
 // Turbines exposes the fleet registry backing this builder.
 func (b *Builder) Turbines() *turbine.Registry { return b.registry }
+
+
+// FilterWithin returns samples whose timestamp falls within [start, end].
+func FilterWithin(samples []telemetry.Sample, start, end time.Time) []telemetry.Sample {
+	out := samples[:0]
+	for _, s := range samples {
+		if !s.Timestamp.Before(start) && !s.Timestamp.After(end) {
+			out = append(out, s)
+		}
+	}
+	return out
+}

@@ -24,8 +24,7 @@ func (s Section) RowMap() map[string]string {
 
 // SortRows orders section rows by key.
 func SortRows(s Section) Section {
-	rows := make([]SectionRow, len(s.Rows))
-	copy(rows, s.Rows)
+	rows := s.Rows
 	for i := 1; i < len(rows); i++ {
 		for j := i; j > 0 && rows[j].Key < rows[j-1].Key; j-- {
 			rows[j], rows[j-1] = rows[j-1], rows[j]

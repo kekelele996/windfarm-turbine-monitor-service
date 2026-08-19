@@ -36,7 +36,7 @@ func (r *SampleRegistry) Append(s Sample) error {
 	return nil
 }
 
-// Recent returns a copy of the most recent n samples for a turbine.
+// Recent returns the most recent n samples for a turbine.
 func (r *SampleRegistry) Recent(turbineID string, n int) []Sample {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -44,9 +44,7 @@ func (r *SampleRegistry) Recent(turbineID string, n int) []Sample {
 	if len(buf) < n {
 		n = len(buf)
 	}
-	out := make([]Sample, n)
-	copy(out, buf[len(buf)-n:])
-	return out
+	return buf[len(buf)-n:]
 }
 
 // Latest returns the most recent sample for a turbine and whether one exists.
@@ -64,8 +62,9 @@ func (r *SampleRegistry) Latest(turbineID string) (Sample, bool) {
 func (r *SampleRegistry) Since(turbineID string, cutoff time.Time) []Sample {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	var out []Sample
-	for _, s := range r.bufs[turbineID] {
+	buf := r.bufs[turbineID]
+	out := buf[:0]
+	for _, s := range buf {
 		if !s.Timestamp.Before(cutoff) {
 			out = append(out, s)
 		}
