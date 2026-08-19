@@ -36,6 +36,13 @@ func (r *SampleRegistry) Append(s Sample) error {
 	return nil
 }
 
+// cloneSamples deep-copies a sample slice so callers never share the buffer.
+func cloneSamples(in []Sample) []Sample {
+	out := make([]Sample, len(in))
+	copy(out, in)
+	return out
+}
+
 // Recent returns the most recent n samples for a turbine.
 func (r *SampleRegistry) Recent(turbineID string, n int) []Sample {
 	r.mu.RLock()
@@ -44,7 +51,7 @@ func (r *SampleRegistry) Recent(turbineID string, n int) []Sample {
 	if len(buf) < n {
 		n = len(buf)
 	}
-	return buf[len(buf)-n:]
+	return cloneSamples(buf[len(buf)-n:])
 }
 
 // Latest returns the most recent sample for a turbine and whether one exists.
@@ -63,11 +70,11 @@ func (r *SampleRegistry) Since(turbineID string, cutoff time.Time) []Sample {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	buf := r.bufs[turbineID]
-	out := buf[:0]
+	out := make([]Sample, 0, len(buf))
 	for _, s := range buf {
 		if !s.Timestamp.Before(cutoff) {
 			out = append(out, s)
 		}
 	}
-	return out
+	return cloneSamples(out)
 }

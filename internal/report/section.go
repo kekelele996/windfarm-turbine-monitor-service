@@ -22,9 +22,16 @@ func (s Section) RowMap() map[string]string {
 	return out
 }
 
+// cloneRows deep-copies a section row slice before sorting.
+func cloneRows(in []SectionRow) []SectionRow {
+	out := make([]SectionRow, len(in))
+	copy(out, in)
+	return out
+}
+
 // SortRows orders section rows by key.
 func SortRows(s Section) Section {
-	rows := s.Rows
+	rows := cloneRows(s.Rows)
 	for i := 1; i < len(rows); i++ {
 		for j := i; j > 0 && rows[j].Key < rows[j-1].Key; j-- {
 			rows[j], rows[j-1] = rows[j-1], rows[j]
