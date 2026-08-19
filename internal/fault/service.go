@@ -1,6 +1,7 @@
 package fault
 
 import (
+	"errors"
 	"fmt"
 
 	"windfarm-turbine-monitor-service/internal/platform"
@@ -28,6 +29,9 @@ func (svc *Service) Raise(turbineID, code, severity string) (Fault, error) {
 func (svc *Service) Acknowledge(id string) (Fault, error) {
 	f, err := svc.store.Get(id)
 	if err != nil {
+		if errors.Is(err, platform.ErrNotFound) {
+			return Fault{}, err
+		}
 		return Fault{}, fmt.Errorf("lookup fault: %w", err)
 	}
 	if f.State == StateNormal {
@@ -40,6 +44,9 @@ func (svc *Service) Acknowledge(id string) (Fault, error) {
 func (svc *Service) Resolve(id string) (Fault, error) {
 	f, err := svc.store.Get(id)
 	if err != nil {
+		if errors.Is(err, platform.ErrNotFound) {
+			return Fault{}, err
+		}
 		return Fault{}, fmt.Errorf("lookup fault: %w", err)
 	}
 	if !CanTransition(f.State, StateNormal) {

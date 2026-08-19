@@ -2,12 +2,14 @@ package gateway
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
 	"windfarm-turbine-monitor-service/internal/alarm"
+	"windfarm-turbine-monitor-service/internal/platform"
 	"windfarm-turbine-monitor-service/internal/telemetry"
 )
 
@@ -137,6 +139,10 @@ func (a *App) handleResolveFault(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	f, err := a.Faults.Resolve(id)
 	if err != nil {
+		if errors.Is(err, platform.ErrNotFound) {
+			writeError(w, http.StatusNotFound, err.Error())
+			return
+		}
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
