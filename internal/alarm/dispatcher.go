@@ -16,7 +16,7 @@ type Dispatcher struct {
 }
 
 func NewDispatcher(dedup *Deduplicator) *Dispatcher {
-	return &Dispatcher{alarms: map[string]Alarm{}, dedup: dedup}
+	return &Dispatcher{dedup: dedup}
 }
 
 func (d *Dispatcher) Dispatch(a Alarm) (Alarm, bool, error) {

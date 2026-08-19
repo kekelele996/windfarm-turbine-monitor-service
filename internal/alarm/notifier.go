@@ -4,8 +4,9 @@ import "sync"
 
 // Notifier fans alarm notifications out to registered channels.
 type Notifier struct {
-	mu    sync.RWMutex
-	sinks []chan Alarm
+	mu     sync.RWMutex
+	sinks  []chan Alarm
+	counts map[string]int
 }
 
 func NewNotifier() *Notifier { return &Notifier{} }
@@ -34,4 +35,11 @@ func (n *Notifier) SinkCount() int {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
 	return len(n.sinks)
+}
+
+// Track records how many notifications each turbine received.
+func (n *Notifier) Track(a Alarm) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	n.counts[a.TurbineID]++
 }

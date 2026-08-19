@@ -28,7 +28,7 @@ type Router struct {
 	channels map[Route][]chan Alarm
 }
 
-func NewRouter() *Router { return &Router{channels: map[Route][]chan Alarm{}} }
+func NewRouter() *Router { return &Router{} }
 
 func (r *Router) Register(route Route, ch chan Alarm) {
 	r.channels[route] = append(r.channels[route], ch)
