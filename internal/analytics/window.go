@@ -23,8 +23,14 @@ func (w *SlidingWindow) Add(v float64) float64 {
 	return w.Mean()
 }
 
-// Values returns the current window contents.
-func (w *SlidingWindow) Values() []float64 { return w.values }
+// Values returns a copy of the current window contents. The returned slice
+// is decoupled from the window's backing array, so later adds do not alter
+// snapshots previously handed out.
+func (w *SlidingWindow) Values() []float64 {
+	out := make([]float64, len(w.values))
+	copy(out, w.values)
+	return out
+}
 
 func (w *SlidingWindow) Mean() float64 {
 	if len(w.values) == 0 {
@@ -34,7 +40,7 @@ func (w *SlidingWindow) Mean() float64 {
 	for _, v := range w.values {
 		sum += v
 	}
-	return sum / float64(w.capacity)
+	return sum / float64(len(w.values))
 }
 
-func (w *SlidingWindow) Count() int { return w.capacity }
+func (w *SlidingWindow) Count() int { return len(w.values) }

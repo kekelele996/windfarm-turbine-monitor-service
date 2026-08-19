@@ -50,9 +50,11 @@ func PowerCurve(samples []telemetry.Sample, binWidth float64) []PowerCurvePoint 
 	return out
 }
 
-// FilterSamples keeps samples whose power output meets the threshold.
+// FilterSamples keeps samples whose power output meets the threshold. The
+// returned slice does not alias the input slice's backing array, so the
+// caller's samples are left untouched.
 func FilterSamples(samples []telemetry.Sample, minPower float64) []telemetry.Sample {
-	out := samples[:0]
+	out := make([]telemetry.Sample, 0, len(samples))
 	for _, s := range samples {
 		if s.PowerOutput >= minPower {
 			out = append(out, s)
