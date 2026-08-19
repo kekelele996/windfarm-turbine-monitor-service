@@ -27,9 +27,9 @@ func NewLifecycle(orders []WorkOrder, now func() time.Time) *Lifecycle {
 func canTransition(from, to Status) bool {
 	switch from {
 	case StatusScheduled:
-		return to == StatusDone
+		return to == StatusInProgress
 	case StatusInProgress:
-		return to == StatusScheduled
+		return to == StatusDone
 	case StatusPending:
 		return to == StatusCancelled
 	}
